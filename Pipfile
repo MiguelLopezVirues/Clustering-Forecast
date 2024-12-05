@@ -15,6 +15,7 @@ plotly = "*"
 tqdm = "*"
 yellowbrick = "*"
 joblib = "*"
+xicorpy = "*"
 
 [dev-packages]
 
