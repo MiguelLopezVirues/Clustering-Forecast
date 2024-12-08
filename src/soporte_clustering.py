@@ -304,7 +304,7 @@ class Clustering:
         - dataframe : pd.DataFrame. El conjunto de datos sobre el cual se aplicarán los métodos de clustering.
     """
     
-    def __init__(self, dataframe):
+    def __init__(self, dataframe, scaled=False):
         """
         Inicializa la clase Clustering con un DataFrame.
 
@@ -372,7 +372,7 @@ class Clustering:
         km_fit = kmeans.fit(self.dataframe_escalado)
         self.labels["kmeans"] = km_fit.labels_
         dataframe_original["clusters_kmeans"] = self.labels["kmeans"].astype(str)
-        return dataframe_original, self.labels["kmeans"]
+        return dataframe_original
     
     def visualizar_dendrogramas(self, lista_metodos=["average", "complete", "ward"]):
         """
@@ -458,9 +458,12 @@ class Clustering:
         # Mostrar el DataFrame
         return results_df
     
-    def plot_clusters(self, columna_cluster):
+    def plot_clusters(self, columna_cluster, dataframe=None):
         # columnas_plot = df_cluster.columns.drop(columna_cluster)
-        df_cluster = self.dataframe.select_dtypes(np.number).copy()
+        if dataframe is None:
+            df_cluster = self.dataframe.select_dtypes(np.number).copy()
+        else:
+            df_cluster = dataframe.select_dtypes(np.number).copy()
         columnas_plot = df_cluster.columns
 
  

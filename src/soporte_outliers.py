@@ -11,7 +11,7 @@ import math
 # -----------------------------------------------------------------------
 import seaborn as sns
 import matplotlib.pyplot as plt
-import plotly_express as px
+# import plotly_express as px
 
 
 # Métodos estadísticos
@@ -442,14 +442,14 @@ class GestionOutliersMultivariados:
 
         return df_lof
 
-    def detectar_outliers_if(self,  contaminacion, n_estimators=1000):
+    def detectar_outliers_if(self,  contaminacion, n_estimators=1000, random_state=99):
         """
         Detecta outliers en un DataFrame utilizando el algoritmo Isolation Forest.
         """
         df_if = self.dataframe.copy()
         col_numericas = self.separar_variables_tipo()[0].columns.to_list()
 
-        ifo = IsolationForest(random_state=42, n_estimators=n_estimators, contamination=contaminacion, max_samples="auto", n_jobs=-1)
+        ifo = IsolationForest(random_state=random_state, n_estimators=n_estimators, contamination=contaminacion, max_samples="auto", n_jobs=-1)
         ifo.fit(self.dataframe[col_numericas])
         prediccion_ifo = ifo.predict(self.dataframe[col_numericas])
         df_if["outlier"] = prediccion_ifo
