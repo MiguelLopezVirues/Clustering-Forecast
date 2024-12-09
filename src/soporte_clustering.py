@@ -20,7 +20,7 @@ from sklearn.preprocessing import StandardScaler, OrdinalEncoder, RobustScaler, 
 # Sacar número de clusters y métricas
 # -----------------------------------------------------------------------
 from yellowbrick.cluster import KElbowVisualizer
-from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 
 # Modelos de clustering
 # -----------------------------------------------------------------------
@@ -28,10 +28,154 @@ from sklearn.cluster import KMeans
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import SpectralClustering
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 # Para visualizar los dendrogramas
 # -----------------------------------------------------------------------
 import scipy.cluster.hierarchy as sch
+
+
+
+
+
+def plot_3D_clusters(dataframe):
+    fig = plt.figure(figsize=(10, 7))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Scatter plot of the PCA-transformed data
+    ax.scatter(dataframe.iloc[:, 0], dataframe.iloc[:, 1], dataframe.iloc[:, 2], c='b', s=50, alpha=0.6, edgecolor='k')
+    
+    # Labels and title
+    ax.set_title('3D PCA Clusters')
+    ax.set_xlabel(f"{dataframe.columns[0]}")
+    ax.set_ylabel(f"{dataframe.columns[1]}")
+    ax.set_zlabel(f"{dataframe.columns[2]}")
+
+    plt.show()
+
+
+# function to calculate corr per client
+def calculate_discount_expense_correlation(grupo):
+    if len(grupo['discount'].unique()) > 1: # if there's variation in discounts
+        return grupo['discounted_price'].corr(grupo['sales'], method="spearman")  # return pearson corr
+    return 0  # else 0
+
+
+def choose_kmeans_k(dataframe,random_state=99):
+    # Define range of clusters
+    k_range = range(2, 16)
+    inertia = []
+    silhouette = []
+    calinski_harabasz = []
+    davies_bouldin = []
+
+    X = dataframe
+
+    # Fit KMeans for each k and calculate metrics
+    for k in k_range:
+        kmeans = KMeans(n_clusters=k, random_state=random_state)
+        kmeans.fit(X)
+        inertia.append(kmeans.inertia_)
+        silhouette.append(silhouette_score(X, kmeans.labels_))
+        calinski_harabasz.append(calinski_harabasz_score(X, kmeans.labels_))
+        davies_bouldin.append(davies_bouldin_score(X, kmeans.labels_))
+
+
+    # Plot metrics
+    plt.figure(figsize=(15, 10))
+
+    # Inertia Plot
+    plt.subplot(2, 2, 1)
+    plt.plot(k_range, inertia, marker='o')
+    plt.title('Inertia')
+    plt.xlabel('Number of Clusters (k)')
+    plt.ylabel('Inertia')
+
+    # Silhouette Score
+    plt.subplot(2, 2, 2)
+    plt.plot(k_range[1:], silhouette[1:], marker='o')  # Skip k=1
+    plt.title('Silhouette Score')
+    plt.xlabel('Number of Clusters (k)')
+    plt.ylabel('Silhouette Score')
+
+    # Calinski-Harabasz Index
+    plt.subplot(2, 2, 3)
+    plt.plot(k_range[1:], calinski_harabasz[1:], marker='o')  # Skip k=1
+    plt.title('Calinski-Harabasz Index')
+    plt.xlabel('Number of Clusters (k)')
+    plt.ylabel('Score')
+
+    # Davies-Bouldin Index
+    plt.subplot(2, 2, 4)
+    plt.plot(k_range[1:], davies_bouldin[1:], marker='o')  # Skip k=1
+    plt.title('Davies-Bouldin Index')
+    plt.xlabel('Number of Clusters (k)')
+    plt.ylabel('Score')
+
+    plt.tight_layout()
+    plt.show()
+
+
+def perform_PCA(dataframe):
+    pca = PCA()
+    X_pca = pd.DataFrame(pca.fit_transform(dataframe))
+
+    # Calculate explained variance ratio
+    explained_variance_ratio = pca.explained_variance_ratio_
+    cumulative_variance = np.cumsum(explained_variance_ratio)
+
+    # Plot explained variance
+    plt.figure(figsize=(8, 5))
+    plt.bar(range(1, len(explained_variance_ratio) + 1), explained_variance_ratio, alpha=0.7, label='Individual Variance')
+    plt.step(range(1, len(cumulative_variance) + 1), cumulative_variance, where='mid', label='Cumulative Variance', color='orange')
+
+    # Add titles and labels
+    plt.title('Explained Variance by Principal Components')
+    plt.xlabel('Principal Component')
+    plt.ylabel('Explained Variance Ratio')
+    plt.xticks(range(1, len(explained_variance_ratio) + 1))
+    plt.legend(loc='best')
+    plt.grid()
+    plt.show()
+
+    return X_pca
+
+
+def t_sne(dataframe, dim=2, perplexity=5):
+    # Perform t-SNE
+    tsne = TSNE(n_components=3, random_state=42, perplexity=perplexity, max_iter=1000)
+    X_tsne = tsne.fit_transform(dataframe)
+
+    if dim == 2:
+        # Plot the t-SNE results in 2D
+        plt.figure(figsize=(8, 6))
+        plt.scatter(X_tsne[:, 0], X_tsne[:, 1], c='b', alpha=0.6, edgecolor='k', s=50)
+        plt.title(f't-SNE Visualization, perplexity {perplexity}')
+        plt.xlabel('t-SNE Dimension 1')
+        plt.ylabel('t-SNE Dimension 2')
+        plt.grid()
+        plt.show()
+
+    else:
+        # Plot the t-SNE results in 3D
+        fig = plt.figure(figsize=(10, 7))
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Scatter plot of t-SNE results
+        ax.scatter(X_tsne[:, 0], X_tsne[:, 1], X_tsne[:, 2], c='b', alpha=0.6, edgecolor='k', s=50)
+
+        # Add labels and title
+        ax.set_title(f't-SNE Visualization in 3D, perplexity {perplexity}')
+        ax.set_xlabel('t-SNE Dimension 1')
+        ax.set_ylabel('t-SNE Dimension 2')
+        ax.set_zlabel('t-SNE Dimension 3')
+
+        plt.show()
+
+
+
+
 
 class Exploracion:
     """
